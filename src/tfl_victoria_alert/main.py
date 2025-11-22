@@ -52,7 +52,7 @@ def should_alert(status_list):
         "Severe Delays",
         "Part Suspended",
         "Suspended",
-        "Service Closed",
+        # "Service Closed",
     }
 
     for severity, _ in status_list:
