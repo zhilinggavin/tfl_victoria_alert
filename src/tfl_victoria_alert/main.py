@@ -61,12 +61,13 @@ def should_alert(status_list):
     return False
 
 
-def build_body(status_list):
+def build_body(line_name, status_list):
     text = []
     timestamp = formatdate(localtime=True)
     for severity, reason in status_list:
-        text.append(f"Time: {timestamp}")
-        text.append(f"Status: {severity}")
+        text.append(f"Time: {timestamp}\n")
+        text.append(f"Line: {line_name}\n")
+        text.append(f"Status: {severity}\n")
         if reason:
             text.append(f"Reason: {reason}")
         text.append("")
@@ -77,6 +78,9 @@ def send_email(subject, body):
     msg["Subject"] = subject
     msg["From"] = formataddr(("TfL Victoria Alert Bot", EMAIL_ADDRESS))
     msg["To"] = EMAIL_TO
+    msg["X-Priority"] = "1"
+    msg["X-MSMail-Priority"] = "High"
+    msg["Importance"] = "High"
 
     server = smtplib.SMTP("smtp.gmail.com", 587)
     server.starttls()
@@ -91,9 +95,9 @@ def main():
         if should_alert(status):
             send_email(
                 f"{line_name} Line Alert",
-                build_body(status)
+                build_body(line_name, status)
             )
-            print(f"Email alert of {line_name} sent.")
+            print(f"Email alert of {line_name} line sent.")
         else:
             print(f"{line_name} line OK")
 
