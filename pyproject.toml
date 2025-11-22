@@ -1,0 +1,21 @@
+[project]
+name = "tfl-victoria-alert"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "gavin_mac", email = "zhilinggain@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+]
+
+[project.scripts]
+tfl-victoria-alert = "tfl_victoria_alert:main"
+tfl-alert = "tfl_victoria_alert.main:main"
+
+[build-system]
+requires = ["uv_build>=0.9.11,<0.10.0"]
+build-backend = "uv_build"
