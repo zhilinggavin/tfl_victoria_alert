@@ -31,4 +31,4 @@ jobs:
 
       - name: Run TfL alert script
         run: |
-          uv run python -m tfl_victoria_alert.main
+          uv run tfl-alert

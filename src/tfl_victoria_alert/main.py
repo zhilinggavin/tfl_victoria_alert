@@ -2,15 +2,15 @@ import os
 import requests
 import smtplib
 from email.mime.text import MIMEText
-from email.utils import formataddr
+from email.utils import formataddr, formatdate
 from dotenv import load_dotenv
 
 load_dotenv()
 
-TFL_APP_KEY = os.getenv("TFL_APP_KEY")
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-EMAIL_TO = os.getenv("EMAIL_TO")
+TFL_APP_KEY = os.getenv("TFL_APP_KEY", "")
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
+EMAIL_TO = os.getenv("EMAIL_TO", "")
 
 def get_line_status():
     """
@@ -63,7 +63,9 @@ def should_alert(status_list):
 
 def build_body(status_list):
     text = []
+    timestamp = formatdate(localtime=True)
     for severity, reason in status_list:
+        text.append(f"Time: {timestamp}")
         text.append(f"Status: {severity}")
         if reason:
             text.append(f"Reason: {reason}")
@@ -84,18 +86,16 @@ def send_email(subject, body):
 
 def main():
     statuses = get_line_status()
-
-    victoria = statuses.get("Victoria", [])
-    if should_alert(victoria):
-        send_email("Victoria Line Alert", build_body(victoria))
-        print("Victoria alert sent.")
-    else:
-        print("Victoria line OK")
-
-    circle = statuses.get("Circle", [])
-    if should_alert(circle):
-        send_email("Circle Line Alert", build_body(circle))
-        print("Circle alert sent.")
+    
+    for line_name, status in statuses.items():
+        if should_alert(status):
+            send_email(
+                f"{line_name} Line Alert",
+                build_body(status)
+            )
+            print(f"Email alert of {line_name} sent.")
+        else:
+            print(f"{line_name} line OK")
 
 if __name__ == "__main__":
     main()
