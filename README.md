@@ -5,6 +5,10 @@
 This project automatically checks the live status of selected London Underground lines (e.g., Victoria and Circle lines) using the public **TfL Unified API**, and sends an **email alert** when disruptions occur.
 It runs completely in the cloud via **GitHub Actions**, so it works 24/7 even when your computer is off.
 
+A complete system like this:
+
+```TfL API → Cloud Function → Scheduled Trigger → Email → Your Gmail Inbox```
+
 ---
 
 ## 🌟 Features
