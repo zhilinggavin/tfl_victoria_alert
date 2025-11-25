@@ -1,8 +1,11 @@
+import json
 import os
-import requests
 import smtplib
+from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate
+
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,6 +14,8 @@ TFL_APP_KEY = os.getenv("TFL_APP_KEY", "")
 EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
 EMAIL_TO = os.getenv("EMAIL_TO", "")
+ALERT_COOLDOWN_MINUTES = int(os.getenv("ALERT_COOLDOWN_MINUTES", "60"))
+STATE_FILE = os.path.join(os.path.dirname(__file__), ".alert_state.json")
 
 def get_line_status():
     """
@@ -73,6 +78,51 @@ def build_body(line_name, status_list):
         text.append("")
     return "\n".join(text)
 
+
+def load_alert_state():
+    try:
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_alert_state(state):
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f)
+
+
+def normalize_status_list(status_list):
+    return [[severity, reason] for severity, reason in status_list]
+
+
+def should_skip_alert(line_name, status_list, state):
+    entry = state.get(line_name)
+    if not entry:
+        return False
+
+    last_status = entry.get("status")
+    last_ts_str = entry.get("timestamp")
+
+    if last_status != normalize_status_list(status_list):
+        return False
+
+    try:
+        last_ts = datetime.fromisoformat(last_ts_str)
+    except (TypeError, ValueError):
+        return False
+
+    cooldown = timedelta(minutes=ALERT_COOLDOWN_MINUTES)
+    return datetime.now(timezone.utc) - last_ts < cooldown
+
+
+def record_alert(line_name, status_list, state):
+    state[line_name] = {
+        "status": normalize_status_list(status_list),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 def send_email(subject, body):
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject
@@ -89,17 +139,23 @@ def send_email(subject, body):
     server.quit()
 
 def main():
+    state = load_alert_state()
     statuses = get_line_status()
     
     for line_name, status in statuses.items():
         if should_alert(status):
-            send_email(
-                f"{line_name} Line Alert",
-                build_body(line_name, status)
-            )
+            if should_skip_alert(line_name, status, state):
+                print(f"{line_name} alert suppressed (recently sent).")
+                continue
+
+            send_email(f"{line_name} Line Alert", build_body(line_name, status))
+            record_alert(line_name, status, state)
             print(f"Email alert of {line_name} line sent.")
         else:
+            state.pop(line_name, None)
             print(f"{line_name} line OK")
+
+    save_alert_state(state)
 
 if __name__ == "__main__":
     main()
