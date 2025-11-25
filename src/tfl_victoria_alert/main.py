@@ -15,7 +15,7 @@ EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
 EMAIL_TO = os.getenv("EMAIL_TO", "")
 ALERT_COOLDOWN_MINUTES = int(os.getenv("ALERT_COOLDOWN_MINUTES", "60"))
-STATE_FILE = os.path.join(os.path.dirname(__file__), ".alert_state.json")
+STATE_FILE = os.path.join(os.path.dirname(__file__), "alert_state.json")
 
 def get_line_status():
     """
