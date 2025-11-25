@@ -30,5 +30,16 @@ jobs:
           uv sync
 
       - name: Run TfL alert script
+        id: run_alert
         run: |
-          uv run tfl-alert
+          set -o pipefail
+          uv run tfl-alert | tee output.log
+          {
+            echo "alert_output<<'EOF'"
+            cat output.log
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Warn if alert was sent
+        if: contains(steps.run_alert.outputs.alert_output, 'Email alert')
+        run: echo "::warning title=TfL Alert::An alert email was sent in this run. Review the logs for details."
